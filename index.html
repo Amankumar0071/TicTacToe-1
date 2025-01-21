@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #141e30, #243b55);
+            transition: background 0.5s ease;
+        }
+
+        .instructions {
+            text-align: center;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 5px;
+            margin-top: 20px;
+        }
+
+        .cell {
+            width: 100px;
+            height: 100px;
+            font-size: 2rem;
+            font-weight: bold;
+            text-align: center;
+            line-height: 100px;
+            border: 2px solid white;
+            cursor: pointer;
+            user-select: none;
+            background-color: black;
+            color: white;
+        }
+
+        .cell.played {
+            pointer-events: none;
+        }
+
+        .info {
+            text-align: center;
+            margin: 10px 0;
+            color: white;
+        }
+
+        .button {
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+
+        .restart-btn {
+            margin-top: 20px;
+            display: none;
+        }
+
+        /* Celebration Animation */
+        .celebration {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            animation: fadeOut 2s ease-in-out;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .celebration h1 {
+            font-size: 3rem;
+            color: #ff6347;
+        }
+    </style>
+</head>
+<body>
+    <div id="instruction" class="instructions">
+        <h1>Welcome to Tic Tac Toe!</h1>
+        <p>Test your skills in this classic game. Take turns placing your mark on the grid.</p>
+        <p>The first player to align three marks in a row, column, or diagonal wins!</p>
+        <button class="button" id="startMatchBtn">Start Match</button>
+    </div>
+
+    <div class="info" id="info">
+        <h2>Timer: <span id="timer">0</span> seconds</h2>
+        <h3 id="status">Player X's Turn</h3>
+    </div>
+
+    <div class="game-board" id="board"></div>
+    <button class="button restart-btn" id="restartBtn">Restart</button>
+
+    <audio id="clickSound" src="https://www.soundjay.com/button/sounds/button-09.mp3"></audio>
+
+    <script>
+        const board = document.getElementById('board');
+        const statusText = document.getElementById('status');
+        const timerElement = document.getElementById('timer');
+        const restartBtn = document.getElementById('restartBtn');
+        const clickSound = document.getElementById('clickSound');
+        const startMatchBtn = document.getElementById('startMatchBtn');
+        const instructions = document.getElementById('instruction');
+        const info = document.getElementById('info');
+
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let startTime = Date.now();
+
+        // Initialize the board
+        const cells = Array.from({ length: 9 }, (_, i) => {
+            const cell = document.createElement('div');
+            cell.classList.add('cell');
+            cell.addEventListener('click', () => handleCellClick(cell, i));
+            board.appendChild(cell);
+            return cell;
+        });
+
+        // Start Match
+        startMatchBtn.addEventListener('click', () => {
+            instructions.style.display = 'none';
+            info.style.display = 'block';
+            startTimer();
+        });
+
+        // Handle cell click
+        function handleCellClick(cell, index) {
+            if (!gameActive || cell.textContent) return;
+
+            cell.textContent = currentPlayer;
+            cell.classList.add('played');
+            clickSound.play();
+            changeBackgroundColor();
+
+            if (checkWinner()) {
+                gameActive = false;
+                statusText.textContent = `Player ${currentPlayer} Wins!`;
+                showCelebration(`Player ${currentPlayer} Wins!`);
+                endGame();
+            } else if (cells.every(cell => cell.textContent)) {
+                gameActive = false;
+                statusText.textContent = 'It\'s a Draw!';
+                showCelebration('It\'s a Draw!');
+                endGame();
+            } else {
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                statusText.textContent = `Player ${currentPlayer}'s Turn`;
+            }
+        }
+
+        // Check for winner
+        function checkWinner() {
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // Rows
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // Columns
+                [0, 4, 8], [2, 4, 6]            // Diagonals
+            ];
+
+            return winPatterns.some(pattern =>
+                pattern.every(index => cells[index].textContent === currentPlayer)
+            );
+        }
+
+        // Change background color on tap
+        function changeBackgroundColor() {
+            const color1 = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`;
+            const color2 = `rgb(${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)}, ${Math.floor(Math.random() * 256)})`;
+            document.body.style.background = `linear-gradient(to right, ${color1}, ${color2})`;
+        }
+
+        // End the game
+        function endGame() {
+            restartBtn.style.display = 'block';
+            clearInterval(timerInterval);
+        }
+
+        // Restart game
+        restartBtn.addEventListener('click', () => {
+            cells.forEach(cell => {
+                cell.textContent = '';
+                cell.classList.remove('played');
+            });
+            gameActive = true;
+            currentPlayer = 'X';
+            statusText.textContent = `Player X's Turn`;
+            restartBtn.style.display = 'none';
+            startTime = Date.now();
+            timerElement.textContent = '0';
+            startTimer();
+        });
+
+        // Timer
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                timerElement.textContent = elapsed;
+            }, 1000);
+        }
+
+        // Celebration animation
+        function showCelebration(message) {
+            const celebration = document.createElement('div');
+            celebration.className = 'celebration';
+            celebration.innerHTML = `<h1>${message}</h1>`;
+            document.body.appendChild(celebration);
+
+            setTimeout(() => celebration.remove(), 2000);
+        }
+
+        let timerInterval;
+    </script>
+</body>
+</html>
